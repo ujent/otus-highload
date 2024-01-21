@@ -15,9 +15,10 @@ type RegisterUserRS struct {
 }
 
 type UserRS struct {
+	ID        string `json:"id"`
 	Name      string `json:"first_name"`
 	Surname   string `json:"second_name"`
-	BirthDate int    `json:"birthdate"`
+	BirthDate string `json:"birthdate"`
 	Gender    int    `json:"gender"`
 	Interests string `json:"biography"`
 	City      string `json:"city"`

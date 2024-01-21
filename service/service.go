@@ -48,3 +48,22 @@ func (svc *Svc) RegisterUser(rq *contract.RegisterUserRQ) (string, error) {
 
 	return id, nil
 }
+
+func (svc *Svc) User(id string) (*contract.UserRS, error) {
+	user, err := svc.db.User(id)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &contract.UserRS{
+		ID:        id,
+		Name:      user.Name,
+		Surname:   user.Surname,
+		BirthDate: user.BirthDate.String(),
+		Gender:    user.Gender,
+		Interests: user.Interests,
+		City:      user.City,
+	}
+
+	return res, nil
+}

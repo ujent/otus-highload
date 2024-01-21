@@ -65,5 +65,31 @@ func (st *storage) AddUser(user *contract.User) (string, error) {
 }
 
 func (st *storage) User(id string) (*contract.User, error) {
-	return nil, nil
+	u, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
+
+	uu, err := u.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	user := &User{}
+	err = st.db.Select(user, "SELECT * FROM user WHERE id = ?", uu)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &contract.User{
+		ID:        id,
+		Name:      user.Name,
+		Surname:   user.Surname,
+		Gender:    user.Gender,
+		City:      user.City,
+		Interests: user.Interests,
+		BirthDate: user.BirthDate,
+		Password:  user.Password,
+	}
+	return res, nil
 }

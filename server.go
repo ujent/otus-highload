@@ -126,7 +126,20 @@ func (s *server) registerUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) user(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
 
+	if id == "" {
+		s.writeError(w, http.StatusBadRequest, fmt.Errorf("invalid user id: %s", id))
+		return
+	}
+
+	res, err := s.svc.User(id)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, res)
 }
 
 func (s *server) writeJSON(w http.ResponseWriter, statusCode int, payload interface{}) {
