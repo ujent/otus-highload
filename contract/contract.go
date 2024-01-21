@@ -1,13 +1,33 @@
 package contract
 
-type User struct {
-	ID        string
-	Email     string
-	Password  string
-	Name      string
-	Surname   string
-	Age       int
-	Gender    int
-	Interests string
-	City      string
+type RegisterUserRQ struct {
+	Password  string `json:"password"`
+	Name      string `json:"first_name"`
+	Surname   string `json:"second_name"`
+	BirthDate string `json:"birthdate"`
+	Gender    int    `json:"gender"`
+	Interests string `json:"biography"`
+	City      string `json:"city"`
+}
+
+type RegisterUserRS struct {
+	UserID string `json:"user_id"`
+}
+
+type UserRS struct {
+	Name      string `json:"first_name"`
+	Surname   string `json:"second_name"`
+	BirthDate int    `json:"birthdate"`
+	Gender    int    `json:"gender"`
+	Interests string `json:"biography"`
+	City      string `json:"city"`
+}
+
+type LoginRQ struct {
+	UserID   string `json:"user_id"`
+	Password string `json:"password"`
+}
+
+type LoginRS struct {
+	Token string `json:"token"`
 }

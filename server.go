@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"socialmedia/contract"
+	"socialmedia/service"
 	"socialmedia/settings"
 	"socialmedia/storage"
 
@@ -19,13 +21,14 @@ type server struct {
 	logger   *log.Logger
 	storage  storage.Storage
 	settings *settings.ServerSettings
+	svc      *service.Svc
 }
 
-func newServer(logger *log.Logger, storage storage.Storage, s *settings.ServerSettings) (*server, error) {
+func newServer(logger *log.Logger, svc *service.Svc, s *settings.ServerSettings) (*server, error) {
 	return &server{
 		logger:   logger,
-		storage:  storage,
 		settings: s,
+		svc:      svc,
 	}, nil
 }
 
@@ -74,7 +77,52 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) registerUser(w http.ResponseWriter, r *http.Request) {
+	rq := &contract.RegisterUserRQ{}
+	decoder := json.NewDecoder(r.Body)
 
+	err := decoder.Decode(rq)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if rq.Name == "" {
+		s.writeError(w, http.StatusBadRequest, fmt.Errorf("name isn't set"))
+		return
+	}
+
+	if rq.Surname == "" {
+		s.writeError(w, http.StatusBadRequest, fmt.Errorf("surname isn't set"))
+		return
+	}
+
+	if rq.BirthDate == "" {
+		s.writeError(w, http.StatusBadRequest, fmt.Errorf("birthdate isn't set"))
+		return
+	}
+
+	if rq.City == "" {
+		s.writeError(w, http.StatusBadRequest, fmt.Errorf("city isn't set"))
+		return
+	}
+
+	if rq.Gender == 0 {
+		s.writeError(w, http.StatusBadRequest, fmt.Errorf("gender isn't set"))
+		return
+	}
+
+	if rq.Password == "" {
+		s.writeError(w, http.StatusBadRequest, fmt.Errorf("password isn't set"))
+		return
+	}
+
+	id, err := s.svc.RegisterUser(rq)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, &contract.RegisterUserRS{UserID: id})
 }
 
 func (s *server) user(w http.ResponseWriter, r *http.Request) {

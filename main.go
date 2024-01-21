@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"socialmedia/service"
 	"socialmedia/settings"
 	"socialmedia/storage"
 
@@ -29,7 +30,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	server, err := newServer(logger, st, s.Server)
+	svc, err := service.New(&service.Settings{DB: st, Salt: []byte(s.Salt)})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	server, err := newServer(logger, svc, s.Server)
 	if err != nil {
 		log.Fatal(err)
 	}
