@@ -55,11 +55,19 @@ func (svc *Svc) User(id string) (*contract.UserRS, error) {
 		return nil, err
 	}
 
+	now := time.Now()
+
+	age := now.Year() - user.BirthDate.Year()
+	if user.BirthDate.Month() > now.Month() {
+		age--
+	}
+
 	res := &contract.UserRS{
 		ID:        id,
 		Name:      user.Name,
 		Surname:   user.Surname,
 		BirthDate: user.BirthDate.String(),
+		Age:       age,
 		Gender:    user.Gender,
 		Interests: user.Interests,
 		City:      user.City,

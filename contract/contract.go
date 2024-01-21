@@ -19,6 +19,7 @@ type UserRS struct {
 	Name      string `json:"first_name"`
 	Surname   string `json:"second_name"`
 	BirthDate string `json:"birthdate"`
+	Age       int    `json:"age"`
 	Gender    int    `json:"gender"`
 	Interests string `json:"biography"`
 	City      string `json:"city"`
