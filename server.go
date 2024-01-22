@@ -1,25 +1,27 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"socialmedia/contract"
 	"socialmedia/service"
 	"socialmedia/settings"
-	"socialmedia/storage"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
+	"github.com/golang-jwt/jwt"
 )
 
 var port string
 
 type server struct {
 	logger   *log.Logger
-	storage  storage.Storage
 	settings *settings.ServerSettings
 	svc      *service.Svc
 }
@@ -59,7 +61,11 @@ func (s *server) Start() error {
 
 		r.Route("/user", func(r chi.Router) {
 			r.Post("/register", s.registerUser)
-			r.Get("/get/{id}", s.user)
+
+			r.Route("/get", func(r chi.Router) {
+				r.Use(s.verifyJWT)
+				r.Get("/{id}", s.user)
+			})
 		})
 
 	})
@@ -73,7 +79,96 @@ func (s *server) Start() error {
 }
 
 func (s *server) login(w http.ResponseWriter, r *http.Request) {
+	rq := &contract.LoginRQ{}
+	decoder := json.NewDecoder(r.Body)
 
+	err := decoder.Decode(rq)
+	if err != nil {
+		s.writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if rq.UserID == "" {
+		s.writeError(w, http.StatusBadRequest, fmt.Errorf("userID isn't set"))
+		return
+	}
+
+	if rq.Password == "" {
+		s.writeError(w, http.StatusBadRequest, fmt.Errorf("password isn't set"))
+		return
+	}
+
+	isValid, err := s.svc.IsPswValid(rq.UserID, rq.Password)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if !isValid {
+		s.writeError(w, http.StatusBadRequest, fmt.Errorf("password isn't correct"))
+		return
+	}
+}
+
+func (s *server) generateJWT(userID string) (string, error) {
+	token := jwt.New(jwt.SigningMethodEdDSA)
+	claims := token.Claims.(jwt.MapClaims)
+	claims["exp"] = time.Now().Add(24 * time.Hour)
+	claims["authorized"] = true
+	claims["user"] = userID
+	tokenString, err := token.SignedString(s.settings.Salt)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+func (s *server) verifyJWT(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header["Token"] != nil {
+			token, err := jwt.Parse(r.Header["Token"][0], func(token *jwt.Token) (interface{}, error) {
+				_, ok := token.Method.(*jwt.SigningMethodECDSA)
+				if !ok {
+					return nil, errors.New("unauthorized")
+				}
+
+				return nil, nil
+			})
+
+			if err != nil {
+				err := errors.New("unauthorized due to error parsing the JWT")
+				s.writeError(w, http.StatusUnauthorized, err)
+				return
+			}
+
+			if token.Valid {
+				claims, ok := token.Claims.(jwt.MapClaims)
+				if !ok {
+					s.writeError(w, http.StatusUnauthorized, errors.New("unauthorized due to invalid claims"))
+					return
+				}
+				exp := claims["exp"].(time.Time)
+				now := time.Now()
+				if now.After(exp) {
+					s.writeError(w, http.StatusUnauthorized, errors.New("unauthorized due to token expiration"))
+					return
+				}
+
+				userID := claims["user"].(string)
+				ctx := context.WithValue(r.Context(), "userID", userID)
+
+				next.ServeHTTP(w, r.WithContext(ctx))
+
+			} else {
+				s.writeError(w, http.StatusUnauthorized, errors.New("unauthorized due to invalid token"))
+				return
+			}
+		} else {
+			s.writeError(w, http.StatusUnauthorized, errors.New("unauthorized due to No token in the header"))
+			return
+		}
+	})
 }
 
 func (s *server) registerUser(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +222,6 @@ func (s *server) registerUser(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) user(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-
 	if id == "" {
 		s.writeError(w, http.StatusBadRequest, fmt.Errorf("invalid user id: %s", id))
 		return

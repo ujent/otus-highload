@@ -75,3 +75,14 @@ func (svc *Svc) User(id string) (*contract.UserRS, error) {
 
 	return res, nil
 }
+
+func (svc *Svc) IsPswValid(userID, pswIn string) (bool, error) {
+	pswDB, err := svc.db.Password(userID)
+	if err != nil {
+		return false, err
+	}
+
+	psw := hasher.GenerateHash([]byte(pswIn), svc.salt)
+
+	return string(psw) == pswDB, nil
+}

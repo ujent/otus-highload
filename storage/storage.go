@@ -13,6 +13,7 @@ import (
 type Storage interface {
 	AddUser(*contract.User) (string, error)
 	User(id string) (*contract.User, error)
+	Password(userID string) (string, error)
 }
 
 type storage struct {
@@ -65,12 +66,7 @@ func (st *storage) AddUser(user *contract.User) (string, error) {
 }
 
 func (st *storage) User(id string) (*contract.User, error) {
-	u, err := uuid.Parse(id)
-	if err != nil {
-		return nil, err
-	}
-
-	uu, err := u.MarshalBinary()
+	uu, err := uuidToBinary(id)
 	if err != nil {
 		return nil, err
 	}
@@ -92,4 +88,28 @@ func (st *storage) User(id string) (*contract.User, error) {
 		Password:  user.Password,
 	}
 	return res, nil
+}
+
+func (st *storage) Password(userID string) (string, error) {
+	uu, err := uuidToBinary(userID)
+	if err != nil {
+		return "", err
+	}
+
+	psw := ""
+	err = st.db.Select(&psw, "SELECT password FROM user WHERE id = ?", uu)
+	if err != nil {
+		return "", err
+	}
+
+	return psw, nil
+}
+
+func uuidToBinary(id string) ([]byte, error) {
+	u, err := uuid.Parse(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return u.MarshalBinary()
 }

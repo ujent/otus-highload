@@ -18,6 +18,7 @@ type Settings struct {
 
 type ServerSettings struct {
 	Port string
+	Salt string
 }
 
 func Load() (*Settings, error) {
@@ -36,5 +37,5 @@ func Load() (*Settings, error) {
 		serverPort = serverPortDefault
 	}
 
-	return &Settings{DBConnStr: dbConnStr, Server: &ServerSettings{Port: serverPort}, Salt: salt}, nil
+	return &Settings{DBConnStr: dbConnStr, Server: &ServerSettings{Port: serverPort, Salt: salt}, Salt: salt}, nil
 }
