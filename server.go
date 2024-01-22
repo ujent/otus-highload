@@ -108,6 +108,14 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, http.StatusBadRequest, fmt.Errorf("password isn't correct"))
 		return
 	}
+
+	token, err := s.generateJWT(rq.UserID)
+	if err != nil {
+		s.writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	s.writeJSON(w, http.StatusOK, &contract.LoginRS{Token: token})
 }
 
 func (s *server) generateJWT(userID string) (string, error) {
