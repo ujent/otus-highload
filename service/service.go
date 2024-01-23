@@ -84,5 +84,5 @@ func (svc *Svc) IsPswValid(userID, pswIn string) (bool, error) {
 
 	psw := hasher.GenerateHash([]byte(pswIn), svc.salt)
 
-	return string(psw) == pswDB, nil
+	return string(psw) == string(pswDB), nil
 }

@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	logger := log.New(os.Stdout, "otus_social:", log.LstdFlags|log.Llongfile)
+	logger := log.New(os.Stdout, "otus_socialmedia:", log.LstdFlags|log.Llongfile)
 
 	s, err := settings.Load()
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 type Storage interface {
 	AddUser(*contract.User) (string, error)
 	User(id string) (*contract.User, error)
-	Password(userID string) (string, error)
+	Password(userID string) ([]byte, error)
 }
 
 type storage struct {
@@ -36,7 +36,7 @@ func New(dbPool *sql.DB) (Storage, error) {
 	_, err := db.Exec(
 		`CREATE TABLE IF NOT EXISTS user
 	(id binary(16) NOT NULL PRIMARY KEY, 
-		password varchar(255) NOT NULL,
+		password binary(32) NOT NULL,
 		name varchar(255) NOT NULL, 
 		surname varchar(255) NOT NULL, 
 		birthDate DATE NOT NULL, 
@@ -72,7 +72,7 @@ func (st *storage) User(id string) (*contract.User, error) {
 	}
 
 	user := &User{}
-	err = st.db.Select(user, "SELECT * FROM user WHERE id = ?", uu)
+	err = st.db.Get(user, "SELECT * FROM user WHERE id = ?", uu)
 	if err != nil {
 		return nil, err
 	}
@@ -90,16 +90,16 @@ func (st *storage) User(id string) (*contract.User, error) {
 	return res, nil
 }
 
-func (st *storage) Password(userID string) (string, error) {
+func (st *storage) Password(userID string) ([]byte, error) {
 	uu, err := uuidToBinary(userID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	psw := ""
-	err = st.db.Select(&psw, "SELECT password FROM user WHERE id = ?", uu)
+	psw := []byte{}
+	err = st.db.Get(&psw, "SELECT password FROM user WHERE id = ?", uu)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	return psw, nil

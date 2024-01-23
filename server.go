@@ -119,12 +119,12 @@ func (s *server) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) generateJWT(userID string) (string, error) {
-	token := jwt.New(jwt.SigningMethodEdDSA)
+	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
-	claims["exp"] = time.Now().Add(24 * time.Hour)
+	claims["exp"] = time.Now().Add(24 * time.Hour).Unix()
 	claims["authorized"] = true
 	claims["user"] = userID
-	tokenString, err := token.SignedString(s.settings.Salt)
+	tokenString, err := token.SignedString([]byte(s.settings.Salt))
 	if err != nil {
 		return "", err
 	}
@@ -136,12 +136,12 @@ func (s *server) verifyJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header["Token"] != nil {
 			token, err := jwt.Parse(r.Header["Token"][0], func(token *jwt.Token) (interface{}, error) {
-				_, ok := token.Method.(*jwt.SigningMethodECDSA)
+				_, ok := token.Method.(*jwt.SigningMethodHMAC)
 				if !ok {
-					return nil, errors.New("unauthorized")
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 				}
 
-				return nil, nil
+				return []byte(s.settings.Salt), nil
 			})
 
 			if err != nil {
@@ -154,12 +154,6 @@ func (s *server) verifyJWT(next http.Handler) http.Handler {
 				claims, ok := token.Claims.(jwt.MapClaims)
 				if !ok {
 					s.writeError(w, http.StatusUnauthorized, errors.New("unauthorized due to invalid claims"))
-					return
-				}
-				exp := claims["exp"].(time.Time)
-				now := time.Now()
-				if now.After(exp) {
-					s.writeError(w, http.StatusUnauthorized, errors.New("unauthorized due to token expiration"))
 					return
 				}
 
