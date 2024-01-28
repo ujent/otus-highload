@@ -10,6 +10,7 @@ import (
 	"socialmedia/contract"
 	"socialmedia/service"
 	"socialmedia/settings"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -17,8 +18,6 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/golang-jwt/jwt"
 )
-
-var port string
 
 type server struct {
 	logger   *log.Logger
@@ -70,7 +69,8 @@ func (s *server) Start() error {
 
 	})
 
-	err := http.ListenAndServe(fmt.Sprintf(":%s", port), r)
+	log.Printf("listening on %s", s.settings.Port)
+	err := http.ListenAndServe(fmt.Sprintf(":%s", s.settings.Port), r)
 	if err != nil {
 		return err
 	}
@@ -134,8 +134,14 @@ func (s *server) generateJWT(userID string) (string, error) {
 
 func (s *server) verifyJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header["Token"] != nil {
-			token, err := jwt.Parse(r.Header["Token"][0], func(token *jwt.Token) (interface{}, error) {
+		if val := r.Header["Authorization"]; val != nil {
+			tok, ok := strings.CutPrefix(val[0], "Bearer ")
+			if !ok {
+				err := fmt.Errorf("invalid token format")
+				s.writeError(w, http.StatusUnauthorized, err)
+				return
+			}
+			token, err := jwt.Parse(tok, func(token *jwt.Token) (interface{}, error) {
 				_, ok := token.Method.(*jwt.SigningMethodHMAC)
 				if !ok {
 					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
