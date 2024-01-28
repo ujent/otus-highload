@@ -1,0 +1,38 @@
+version: '3.1'
+
+services:
+
+  api:
+    image: otus-socialmedia-api
+    restart: always
+    environment:
+      - APP_SERVER_PORT=4000
+      - DB_CONN_STRING=admin:admin@tcp(db)/socialmedia?multiStatements=true&parseTime=true
+      - USER_SALT=randomsalt5shf57fhuytglk843dfgdj
+    ports:
+      - 4000:4000
+    depends_on:
+      - db
+
+  db:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    expose:
+      - 3306
+    volumes:
+      - socialmediadata:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=admin
+      - MYSQL_DATABASE=socialmedia
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8000:8080
+
+volumes:
+  socialmediadata:
