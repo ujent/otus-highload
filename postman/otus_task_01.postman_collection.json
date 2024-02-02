@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "03d32fcc-de4b-45f2-917f-10981f990dac",
+		"_postman_id": "e387ad2d-d951-4797-aaee-8966c409df1a",
 		"name": "otus_task_01",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "32532944"
@@ -13,7 +13,16 @@
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.collectionVariables.set(\"userID\", pm.response.user_id);",
+							"pm.collectionVariables.set(\"userID\", pm.response.json()[\"user_id\"]);",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
 							"pm.collectionVariables.set(\"psw\", \"secret\");"
 						],
 						"type": "text/javascript"
@@ -25,7 +34,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"password\": \"secret\",\n    \"first_name\": \"test\",\n    \"second_name\": \"user\",\n    \"birthdate\": \"2000-01-01\",\n    \"gender\": 1,\n    \"biography\": \"\",\n    \"city\": \"novosibirsk\"\n}",
+					"raw": "{\n    \"password\": \"{{psw}}\",\n    \"first_name\": \"test\",\n    \"second_name\": \"user\",\n    \"birthdate\": \"2000-01-01\",\n    \"gender\": 1,\n    \"biography\": \"\",\n    \"city\": \"novosibirsk\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -54,7 +63,8 @@
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.collectionVariables.set(\"token\", pm.response.token);"
+							"pm.collectionVariables.set(\"token\", pm.response.json()[\"token\"]);",
+							""
 						],
 						"type": "text/javascript"
 					}
@@ -65,7 +75,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"user_id\": {{userID}},\n    \"password\": {{psw}}\n}",
+					"raw": "{\n    \"user_id\": \"{{userID}}\",\n    \"password\": \"{{psw}}\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
